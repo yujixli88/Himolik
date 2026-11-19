@@ -1,13 +1,18 @@
 """Настройки Himolik.
 
-Все секреты (GEMINI_API_KEY, SECRET_KEY) читаются ТОЛЬКО из переменных окружения.
-В репозиторий они не попадают, на фронтенд не отдаются.
+Секреты читаются из переменных окружения или локального файла .env.
+.env игнорируется Git и никогда не отдаётся фронтенду.
 """
 from __future__ import annotations
 
 import logging
 import os
 import secrets
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 log = logging.getLogger("himolik")
 
