@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Himolik — API</title>
+  </head>
+  <body>
+    <main>
+      <h1>Himolik — backend работает</h1>
+      <p>Это заглушка главной страницы. Интерфейс лаборатории пока не подключён.</p>
+      <ul>
+        <li><a href="/healthz">Проверить состояние сервера</a></li>
+        <li><a href="/docs">Открыть документацию API (Swagger)</a></li>
+      </ul>
+      <p>Если Swagger недоступен, запустите сервер с <code>DEBUG=true</code>.</p>
+      <h2>Модули backend</h2>
+      <ul>
+        <li><code>app/main.py</code> — запуск FastAPI и API-маршруты</li>
+        <li><code>app/catalog.py</code> — каталог предметов и событий</li>
+        <li><code>app/simulator.py</code> — модель опытов</li>
+        <li><code>app/rooms.py</code> — комнаты и ученики</li>
+        <li><code>app/ai.py</code> — интеграция с ИИ-лаборантом</li>
+        <li><code>app/security.py</code> — токены и ограничения запросов</li>
+        <li><code>app/config.py</code> — настройки приложения</li>
+        <li><code>app/qr.py</code> — генерация QR-кодов</li>
+      </ul>
+      <p>Это перечень модулей, а не просмотр исходного кода. Исходники открывайте в VS Code или GitHub; не публикуйте файлы сервера через сайт.</p>
+    </main>
+  </body>
+</html>

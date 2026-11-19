@@ -1,7 +1,7 @@
 """Himolik — виртуальная лаборатория по химии и физике с ИИ-лаборантом (FastAPI).
 
-Запуск локально:   uvicorn main:app --reload
-Запуск на Render:  uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+Запуск локально:   uvicorn app.main:app --reload
+Запуск на Render:  uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 logging.getLogger("httpx").setLevel(logging.WARNING)  # не писать адреса запросов в логи
 log = logging.getLogger("himolik")
 
-STATIC_DIR = Path(__file__).resolve().parent / "static"
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 store = rooms.RoomStore()
 limiter = RateLimiter()
@@ -428,7 +428,10 @@ async def chat(body: ChatBody, ctx=Depends(student_ctx)):
 # =============================================================================
 @app.get("/", include_in_schema=False)
 async def index():
-    return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"})
+    index_file = STATIC_DIR / "index.html"
+    if not index_file.is_file():
+        raise StarletteHTTPException(status_code=404)
+    return FileResponse(index_file, headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -436,4 +439,5 @@ async def favicon():
     return Response(status_code=204)
 
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+if STATIC_DIR.is_dir():
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

@@ -1,0 +1,17 @@
+# Render Blueprint: New -> Blueprint -> выберите репозиторий. Либо создайте Web Service вручную
+# с теми же командами.
+services:
+  - type: web
+    name: himolik
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: GEMINI_API_KEY
+        sync: false          # ключ вводится вручную в панели Render, в репозиторий не попадает
+      - key: SECRET_KEY
+        generateValue: true  # Render сам сгенерирует; токены не слетают при перезапуске
