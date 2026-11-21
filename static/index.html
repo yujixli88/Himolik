@@ -34,6 +34,7 @@
     <p id="t-url" class="small"></p>
     <h3>Ученики</h3>
     <ul id="t-students" class="students"></ul>
+    <button class="btn chat-open" data-chat-open>💬 Химолик</button>
     <button id="t-close" class="btn alt">Закрыть комнату</button>
   </div>
 </section>
@@ -50,6 +51,7 @@
 <section id="s-room" class="screen scene" hidden>
   <div id="room-bg" class="bg pan"></div>
   <button id="b-desk" class="hotspot">🧪 Подойти к столу</button>
+  <button class="btn chat-open" data-chat-open>💬 Химолик</button>
 </section>
 
 <section id="s-lab" class="screen scene" hidden>
@@ -62,22 +64,22 @@
       <img src="/static/img/flask.png" alt="Колба">
     </div>
     <div id="phys" class="phys" hidden>
-      <div class="meter"><img src="/static/img/ammeter.png" alt="Амперметр"><b id="m-a">0.00 A</b></div>
-      <div class="meter"><img src="/static/img/voltmeter.png" alt="Вольтметр"><b id="m-v">0.0 V</b></div>
+      <div id="meter-a" class="meter"><img src="/static/img/ammeter.png" alt="Амперметр"><b id="m-a">— A</b></div>
+      <div id="meter-v" class="meter"><img src="/static/img/voltmeter.png" alt="Вольтметр"><b id="m-v">— V</b></div>
       <div id="circuit" class="chips"></div>
     </div>
   </div>
   <div id="shelf" class="shelf"></div>
   <button id="b-reset" class="btn small-btn">Очистить</button>
-  <button id="b-chat" class="btn chat-open">💬 Химолик</button>
+  <button class="btn chat-open" data-chat-open>💬 Химолик</button>
   <img id="hand-l" class="hand l" src="/static/img/hand-l.png" alt="">
   <img id="hand-r" class="hand r" src="/static/img/hand-r.png" alt="">
-  <aside id="chat" class="chat" hidden>
-    <header><img src="/static/img/mascot.jpg" alt=""><div><b>Химолик</b><small>ИИ-лаборант. Он может ошибаться — важное проверь у учителя.</small></div><button id="chat-x">✕</button></header>
-    <div id="chat-log"></div>
-    <div class="chat-in"><input id="chat-q" maxlength="400" placeholder="Спроси про опыт…"><button id="chat-send" class="btn">➤</button></div>
-  </aside>
 </section>
+<aside id="chat" class="chat" hidden>
+  <header><img src="/static/img/mascot.jpg" alt=""><div><b>Химолик</b><small>ИИ-лаборант. Он может ошибаться — важное проверь у учителя.</small></div><button id="chat-x">✕</button></header>
+  <div id="chat-log"></div>
+  <div class="chat-in"><input id="chat-q" maxlength="400" placeholder="Спроси про опыт…"><button id="chat-send" class="btn">➤</button></div>
+</aside>
 <script src="/static/js/app.js"></script>
 </body>
 </html>

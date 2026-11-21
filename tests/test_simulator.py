@@ -151,7 +151,11 @@ class PhysicsTests(unittest.TestCase):
         # I = 4.5 / (0.5 + 10 + 0.1) ≈ 0.42 А, U на резисторе ≈ 4.25 В
         self.assertAlmostEqual(ev["view"]["current"], 0.42, places=2)
         resistor = [e for e in ev["view"]["elements"] if e["id"] == "resistor"][0]
+        ammeter = [e for e in ev["view"]["elements"] if e["id"] == "ammeter"][0]
+        voltmeter = [e for e in ev["view"]["elements"] if e["id"] == "voltmeter"][0]
         self.assertAlmostEqual(resistor["value"], 4.25, places=2)
+        self.assertAlmostEqual(ammeter["value"], 0.42, places=2)
+        self.assertAlmostEqual(voltmeter["value"], 4.25, places=2)
 
     def test_short_circuit(self):
         _, events, ev = run("physics", ["battery", "ammeter"], PHYS_ALL)

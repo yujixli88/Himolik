@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import catalog, rooms, simulator
-from app.ai import GeminiClient, LabContext
+from app.ai import AIResult, GeminiClient, LabContext
 from app.config import settings
 from app.qr import make_qr_svg
 from app.security import (Claims, RateLimiter, clean_name, clean_title, sign_token, valid_code,
@@ -232,6 +232,27 @@ class ChatBody(BaseModel):
     lang: Literal["ru", "kk"] = "ru"
 
 
+async def ask_assistant(room: rooms.Room, state: dict, history: list, recent_events: list,
+                        message: str, lang: str) -> tuple[str, AIResult]:
+    question = " ".join(message.split())
+    if not question:
+        raise ApiError(400, "bad_request")
+    ev = simulator.evaluate(room.subject, state)
+    lab = LabContext(
+        subject=room.subject,
+        title=room.title,
+        items_ru=[catalog.ITEMS[i]["ai"] for i in room.items],
+        state_desc=simulator.describe_ru(room.subject, ev),
+        recent_ru=[catalog.EVENTS[e]["ru"] for e in recent_events if e in catalog.EVENTS],
+    )
+    result = await gemini.ask(lab, history, question, lang)
+    if result.source == "busy":
+        raise ApiError(429, "ai_busy", message=result.answer, retry_after=10)
+    if result.source == "unavailable":
+        raise ApiError(503, "ai_unavailable", message=result.answer)
+    return question, result
+
+
 # =============================================================================
 # Публичные эндпоинты
 # =============================================================================
@@ -316,6 +337,17 @@ async def close_room(room: rooms.Room = Depends(teacher_room)):
     return {"ok": True}
 
 
+@app.post("/api/teacher/chat")
+async def teacher_chat(body: ChatBody, room: rooms.Room = Depends(teacher_room)):
+    limit(f"chat-teacher:{room.code}", settings.chat_per_room_per_min, 60)
+    question, result = await ask_assistant(
+        room, simulator.empty_state(room.subject), room.teacher_history, [], body.message, body.lang,
+    )
+    if result.on_topic:
+        room.teacher_history = (room.teacher_history + [("user", question), ("model", result.answer)])[-8:]
+    return {"answer": result.answer, "on_topic": result.on_topic}
+
+
 # =============================================================================
 # Ученик
 # =============================================================================
@@ -390,28 +422,13 @@ async def act(body: ActBody, ctx=Depends(student_ctx)):
 @app.post("/api/chat")
 async def chat(body: ChatBody, ctx=Depends(student_ctx)):
     room, student = ctx
-    question = " ".join(body.message.split())
-    if not question:
-        raise ApiError(400, "bad_request")
     limit(f"chat-min:{student.id}", settings.chat_per_student_per_min, 60)
     limit(f"chat-hour:{student.id}", settings.chat_per_student_per_hour, 3600)
     limit(f"chat-room:{room.code}", settings.chat_per_room_per_min, 60)
 
-    # Контекст опыта строит сервер по состоянию симулятора — клиент его подменить не может.
-    ev = simulator.evaluate(room.subject, student.state)
-    lab = LabContext(
-        subject=room.subject,
-        title=room.title,
-        items_ru=[catalog.ITEMS[i]["ai"] for i in room.items],
-        state_desc=simulator.describe_ru(room.subject, ev),
-        recent_ru=[catalog.EVENTS[e]["ru"] for e in student.recent_events if e in catalog.EVENTS],
+    question, result = await ask_assistant(
+        room, student.state, student.history, list(student.recent_events), body.message, body.lang,
     )
-    result = await gemini.ask(lab, student.history, question, body.lang)
-
-    if result.source == "busy":
-        raise ApiError(429, "ai_busy", message=result.answer, retry_after=10)
-    if result.source == "unavailable":
-        raise ApiError(503, "ai_unavailable", message=result.answer)
 
     student.questions += 1
     if result.on_topic:

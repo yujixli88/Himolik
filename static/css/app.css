@@ -39,8 +39,11 @@ input[type=text],input:not([type]),input[inputmode]{border:3px solid var(--navy)
 @keyframes rise{to{transform:translateY(-110px);opacity:0}}
 .stream{position:absolute;top:0;width:8px;height:0;border-radius:4px;background:#8cc4ff;opacity:0;transition:height .35s,opacity .2s}
 .stream.go{height:55%;opacity:.9}
-.phys{display:flex;flex-direction:column;align-items:center;gap:8px}.meter{position:relative;width:min(34vw,140px);display:inline-block}
+.phys{display:flex;flex-direction:column;align-items:center;gap:8px}.meter{position:relative;width:min(34vw,140px);display:inline-block;opacity:.5;transition:opacity .2s,filter .2s}
 .meter img{width:100%;display:block}.meter b{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);background:#0b1b12;color:#5dff8a;padding:1px 8px;border-radius:6px;font-size:14px}
+.meter.active{opacity:1;filter:drop-shadow(0 0 8px #5dff8a)}
+.meter:not(.active) b{color:#9ba79d}
+.chip{font:inherit}.chip.lit{background:#ffdf78;box-shadow:0 0 12px #ffd45e}.chip.burned{background:#d7b4a8}
 .shelf{position:absolute;left:0;right:0;bottom:0;padding:8px 8px 14px;display:flex;gap:8px;overflow-x:auto;background:linear-gradient(transparent,rgba(0,0,0,.65));z-index:5}
 .shelf button{flex:0 0 auto;min-width:82px;background:var(--cream);border:3px solid var(--navy);border-radius:12px;padding:8px;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center}
 .shelf button b{font-size:18px}.shelf button span{font-size:11px}
@@ -54,4 +57,6 @@ input[type=text],input:not([type]),input[inputmode]{border:3px solid var(--navy)
 .msg{padding:8px 10px;border-radius:12px;max-width:85%;font-size:14px;border:2px solid var(--navy)}.msg.me{align-self:flex-end;background:var(--blue)}.msg.ai{background:#fff}
 .chat-in{display:flex;gap:6px;padding:8px}
 #toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:12px;z-index:50;max-width:90vw;text-align:center;font-size:14px}
-.hand.l{left:5%}.hand.r{right:5%}.stream{left:50%}
+.hand.l{left:12%}.hand.r{right:12%}.stream{left:50%}
+.chat{position:fixed}
+#s-teacher .chat-open{position:static;align-self:flex-start}

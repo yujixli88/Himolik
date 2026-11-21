@@ -23,8 +23,9 @@
 1. `POST /api/rooms` с `{"subject":"chemistry"|"physics","title":"…","items":["hcl","naoh",…]}`. В ответе `code` (6 цифр), `token` (сохранить в `localStorage`), `join_url`.
 2. `GET /api/teacher/room` (с токеном). Состав комнаты и `students[]`: `name`, `online`, `found`/`total` (прогресс), `actions`, `questions`, `off_topic`. Опрашивать раз в 3–5 секунд.
 3. `GET /api/teacher/students/{sid}/chat`: журнал вопросов ученика к ИИ (для контроля учителем).
-4. `DELETE /api/teacher/room`: закрыть комнату.
-5. `POST /api/teacher/restore` (то же тело, что у создания): восстановить комнату с тем же кодом, если сервер перезапустился (ответ 404 `room_not_found`).
+4. `POST /api/teacher/chat` с `{"message":"…","lang":"ru"|"kk"}`: спросить ИИ по предмету, работе и выбранным приборам/реагентам. Состояние опыта учителя пустое; диалог хранится до закрытия комнаты.
+5. `DELETE /api/teacher/room`: закрыть комнату.
+6. `POST /api/teacher/restore` (то же тело, что у создания): восстановить комнату с тем же кодом, если сервер перезапустился (ответ 404 `room_not_found`).
 
 ## Ученик
 1. `POST /api/join` с `{"code":"123456","name":"Айдар"}`. Код берётся из `?room=` в URL (QR) или вводится руками. В ответе `token` (сохранить), `room`, `state`, `found`, `total`, `snapshot`.

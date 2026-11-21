@@ -37,7 +37,8 @@ async function init() {
   if (q) { $('j-code').value = q.replace(/\D/g, '').slice(0, 6); show('s-join'); $('j-name').focus(); } else show('s-home');
   document.addEventListener('pointermove', moveHands);
   $('b-desk').onclick = goDesk; $('b-reset').onclick = () => act({ action: 'reset' });
-  $('b-chat').onclick = () => $('chat').hidden = !$('chat').hidden; $('chat-x').onclick = () => $('chat').hidden = true;
+  document.querySelectorAll('[data-chat-open]').forEach(b => b.onclick = () => $('chat').hidden = !$('chat').hidden);
+  $('chat-x').onclick = () => $('chat').hidden = true;
   $('chat-send').onclick = sendChat; $('chat-q').onkeydown = e => { if (e.key === 'Enter') sendChat(); };
 }
 
@@ -127,11 +128,24 @@ function render(s) {
     if (s.gas && s.gas.length) for (let i = 0; i < 10; i++) { const x = el('i'); x.style.left = (15 + Math.random() * 70) + '%'; x.style.animationDelay = (Math.random() * 1.6) + 's'; b.append(x); }
     $('flask').classList.toggle('heat', !!s.heat);
   } else {
-    $('m-a').textContent = (s.closed && !s.burned ? s.current : 0).toFixed(2) + ' A';
-    $('m-v').textContent = (s.closed && !s.burned ? s.emf : 0).toFixed(1) + ' V';
+    const ammeter = s.elements.find(e => e.id === 'ammeter');
+    const voltmeter = s.elements.find(e => e.id === 'voltmeter');
+    $('m-a').textContent = ammeter ? ammeter.value.toFixed(2) + ' A' : '— A';
+    $('m-v').textContent = voltmeter ? voltmeter.value.toFixed(2) + ' V' : '— V';
+    $('meter-a').classList.toggle('active', !!ammeter);
+    $('meter-v').classList.toggle('active', !!voltmeter);
     const c = $('circuit'); c.textContent = '';
     s.elements.forEach(e => {
-      const chip = el('span', 'chip', name(e.id) + (e.id === 'switch' ? (e.on ? ' (вкл)' : ' (выкл)') : '') + (e.id === 'lamp' && s.burned ? ' 💥' : ''));
+      const bulbStatus = e.id === 'bulb' ? {
+        off: ' (не горит)', dim: ' (тускло)', normal: ' (горит)', bright: ' (ярко)', burned: ' (перегорела)'
+      }[e.status] : '';
+      const chip = el('button', 'chip', name(e.id)
+        + (e.id === 'switch' ? (e.on ? ' (вкл)' : ' (выкл)') : '')
+        + bulbStatus);
+      chip.type = 'button';
+      chip.title = e.id === 'switch' ? 'Нажми, чтобы переключить ключ' : 'Нажми, чтобы убрать элемент';
+      chip.classList.toggle('lit', e.id === 'bulb' && ['dim', 'normal', 'bright'].includes(e.status));
+      chip.classList.toggle('burned', e.id === 'bulb' && e.status === 'burned');
       chip.onclick = () => act(e.id === 'switch' ? { action: 'toggle', index: e.idx } : { action: 'remove', index: e.idx });
       c.append(chip);
     });
@@ -139,7 +153,7 @@ function render(s) {
   }
 }
 function moveHands(e) {
-  const W = innerWidth, H = innerHeight, dx = (e.clientX - W / 2) * 0.35, dy = Math.max(-220, Math.min(40, (e.clientY - H * 0.75) * 0.3));
+  const W = innerWidth, H = innerHeight, dx = (e.clientX - W / 2) * 0.12, dy = Math.max(-90, Math.min(20, (e.clientY - H * 0.75) * 0.15));
   $('hand-l').style.transform = `translate(${dx}px,${dy}px) rotate(${dx / 25}deg)`;
   $('hand-r').style.transform = `translate(${dx}px,${dy}px) rotate(${dx / 25}deg)`;
 }
@@ -149,7 +163,9 @@ async function sendChat() {
   const q = $('chat-q').value.trim(); if (!q) return; $('chat-q').value = '';
   const log = $('chat-log'); log.append(el('div', 'msg me', q));
   const wait = el('div', 'msg ai', '…'); log.append(wait); log.scrollTop = log.scrollHeight;
-  const d = await api('/api/chat', 'POST', { message: q, lang: 'ru' }, token);
+  const teacher = !$('s-teacher').hidden;
+  const d = await api(teacher ? '/api/teacher/chat' : '/api/chat', 'POST', { message: q, lang: 'ru' },
+    teacher ? store.get('hm_t') : token);
   wait.textContent = d ? d.answer : 'Не получилось ответить. Попробуй ещё раз.'; log.scrollTop = log.scrollHeight;
 }
 init();

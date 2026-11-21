@@ -51,6 +51,7 @@ class Room:
     created_at: float
     last_activity: float
     students: dict = field(default_factory=dict)
+    teacher_history: list = field(default_factory=list)
 
 
 class RoomStore:
