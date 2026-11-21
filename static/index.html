@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Himolik — виртуальная лаборатория</title>
+<link rel="icon" href="/static/img/logo-icon.svg">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div id="toast" hidden></div>
+
+<section id="s-home" class="screen center">
+  <img src="/static/img/logo.svg" alt="Himolik" class="logo">
+  <button id="b-teacher" class="btn big">Я педагог</button>
+  <button id="b-student" class="btn big alt">Я ученик</button>
+</section>
+
+<section id="s-teacher" class="screen card" hidden>
+  <button class="back" data-go="home">← Назад</button>
+  <div id="t-form">
+    <h2>Новая лабораторная</h2>
+    <div class="row">
+      <label><input type="radio" name="subj" value="chemistry" checked> Химия</label>
+      <label><input type="radio" name="subj" value="physics"> Физика</label>
+    </div>
+    <input id="t-title" maxlength="80" placeholder="Название работы">
+    <div id="t-items" class="chips"></div>
+    <button id="t-create" class="btn">Создать комнату</button>
+  </div>
+  <div id="t-room" hidden>
+    <h2>Комната <span id="t-code" class="code"></span></h2>
+    <img id="t-qr" alt="QR-код комнаты" class="qr">
+    <p id="t-url" class="small"></p>
+    <h3>Ученики</h3>
+    <ul id="t-students" class="students"></ul>
+    <button id="t-close" class="btn alt">Закрыть комнату</button>
+  </div>
+</section>
+
+<section id="s-join" class="screen card" hidden>
+  <button class="back" data-go="home">← Назад</button>
+  <h2>Вход в лабораторию</h2>
+  <input id="j-code" inputmode="numeric" maxlength="6" placeholder="Код комнаты (6 цифр)">
+  <input id="j-name" maxlength="24" placeholder="Твоё имя или ник">
+  <p class="small">Фамилию и личные данные вводить не нужно.</p>
+  <button id="j-go" class="btn">Войти</button>
+</section>
+
+<section id="s-room" class="screen scene" hidden>
+  <div id="room-bg" class="bg pan"></div>
+  <button id="b-desk" class="hotspot">🧪 Подойти к столу</button>
+</section>
+
+<section id="s-lab" class="screen scene" hidden>
+  <div class="bg bench"></div>
+  <div id="lab-title" class="lab-title"></div>
+  <div id="stage">
+    <div id="stream" class="stream"></div>
+    <div id="flask" class="flask">
+      <div class="liqbox"><div id="liq" class="liq"></div><div id="ppt" class="ppt"></div><div id="bub" class="bub"></div></div>
+      <img src="/static/img/flask.png" alt="Колба">
+    </div>
+    <div id="phys" class="phys" hidden>
+      <div class="meter"><img src="/static/img/ammeter.png" alt="Амперметр"><b id="m-a">0.00 A</b></div>
+      <div class="meter"><img src="/static/img/voltmeter.png" alt="Вольтметр"><b id="m-v">0.0 V</b></div>
+      <div id="circuit" class="chips"></div>
+    </div>
+  </div>
+  <div id="shelf" class="shelf"></div>
+  <button id="b-reset" class="btn small-btn">Очистить</button>
+  <button id="b-chat" class="btn chat-open">💬 Химолик</button>
+  <img id="hand-l" class="hand l" src="/static/img/hand-l.png" alt="">
+  <img id="hand-r" class="hand r" src="/static/img/hand-r.png" alt="">
+  <aside id="chat" class="chat" hidden>
+    <header><img src="/static/img/mascot.jpg" alt=""><div><b>Химолик</b><small>ИИ-лаборант. Он может ошибаться — важное проверь у учителя.</small></div><button id="chat-x">✕</button></header>
+    <div id="chat-log"></div>
+    <div class="chat-in"><input id="chat-q" maxlength="400" placeholder="Спроси про опыт…"><button id="chat-send" class="btn">➤</button></div>
+  </aside>
+</section>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
