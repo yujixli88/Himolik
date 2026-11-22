@@ -240,10 +240,14 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(res.source, "unavailable")
 
     def test_bad_key_stops_chain_without_leaking(self):
-        post = FakePost((403, {"error": {"status": "PERMISSION_DENIED"}}))
-        res = self.ask(ai.GeminiClient(post))
-        self.assertEqual(res.source, "unavailable")
-        self.assertEqual(len(post.calls), 1)
+        for response in (
+                (403, {"error": {"status": "PERMISSION_DENIED"}}),
+                (400, {"error": {"status": "API_KEY_INVALID", "message": "API key not valid"}}),
+        ):
+            post = FakePost(response)
+            res = self.ask(ai.GeminiClient(post))
+            self.assertEqual(res.source, "key_rejected")
+            self.assertEqual(len(post.calls), 1)
 
     def test_network_exception_is_handled(self):
         async def boom(*a):
@@ -258,7 +262,7 @@ class ClientTests(unittest.TestCase):
 
     def test_missing_key(self):
         settings.gemini_api_key = ""
-        self.assertEqual(self.ask(ai.GeminiClient(FakePost())).source, "unavailable")
+        self.assertEqual(self.ask(ai.GeminiClient(FakePost())).source, "not_configured")
 
     def test_cache_only_for_first_question(self):
         post = FakePost((200, gemini_reply(True, "Первый")), (200, gemini_reply(True, "Второй")))

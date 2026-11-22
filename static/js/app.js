@@ -6,20 +6,30 @@ const store = {
 };
 const ERR = { room_not_found: 'Комната не найдена. Проверь код.', room_closed: 'Учитель закрыл эту комнату.', bad_code: 'Код — это 6 цифр.',
   bad_name: 'Введи имя.', room_full: 'В комнате нет мест.', rate_limited: 'Слишком часто. Подожди немного.', ai_busy: 'Химолик занят, попробуй через пару секунд.',
-  ai_unavailable: 'Химолик сейчас недоступен.', unauthorized: 'Нужно войти заново.', server_busy: 'Сервер занят, попробуй позже.' };
+  ai_unavailable: 'Химолик сейчас недоступен.', ai_not_configured: 'ИИ не настроен: проверь GEMINI_API_KEY в Render.',
+  ai_key_rejected: 'Ключ отклонён или нет доступа к Gemini API. Проверь GEMINI_API_KEY в Render.', unauthorized: 'Нужно войти заново.',
+  server_busy: 'Сервер занят, попробуй позже.' };
 let catalog = null, token = null, me = null, state = null, items = {}, pollTimer = null, toastT;
 
 function toast(t) { const e = $('toast'); e.textContent = t; e.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => e.hidden = true, 3500); }
 function show(id) { document.querySelectorAll('.screen').forEach(s => s.hidden = s.id !== id); }
-async function api(path, method = 'GET', body = null, tok = null) {
+async function api(path, method = 'GET', body = null, tok = null, retries503 = 0) {
   const h = { 'Content-Type': 'application/json' };
   if (tok) h.Authorization = 'Bearer ' + tok;
-  try {
-    const r = await fetch(path, { method, headers: h, body: body ? JSON.stringify(body) : null });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) { toast(d.message || ERR[d.error] || 'Ошибка. Попробуй ещё раз.'); return null; }
-    return d;
-  } catch (e) { toast('Нет связи с сервером.'); return null; }
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const r = await fetch(path, { method, headers: h, body: body ? JSON.stringify(body) : null });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        if (r.status === 503 && attempt < retries503) {
+          await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+          continue;
+        }
+        toast(d.message || ERR[d.error] || 'Ошибка. Попробуй ещё раз.'); return null;
+      }
+      return d;
+    } catch (e) { toast('Нет связи с сервером.'); return null; }
+  }
 }
 const name = i => (items[i] ? items[i].name.ru : i);
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -165,7 +175,7 @@ async function sendChat() {
   const wait = el('div', 'msg ai', '…'); log.append(wait); log.scrollTop = log.scrollHeight;
   const teacher = !$('s-teacher').hidden;
   const d = await api(teacher ? '/api/teacher/chat' : '/api/chat', 'POST', { message: q, lang: 'ru' },
-    teacher ? store.get('hm_t') : token);
+    teacher ? store.get('hm_t') : token, 2);
   wait.textContent = d ? d.answer : 'Не получилось ответить. Попробуй ещё раз.'; log.scrollTop = log.scrollHeight;
 }
 init();

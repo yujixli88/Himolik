@@ -248,6 +248,12 @@ async def ask_assistant(room: rooms.Room, state: dict, history: list, recent_eve
     result = await gemini.ask(lab, history, question, lang)
     if result.source == "busy":
         raise ApiError(429, "ai_busy", message=result.answer, retry_after=10)
+    if result.source == "not_configured":
+        raise ApiError(503, "ai_not_configured",
+                       message="На сервере не задан GEMINI_API_KEY. Добавьте ключ в переменные окружения Render.")
+    if result.source == "key_rejected":
+        raise ApiError(503, "ai_key_rejected",
+                       message="Google отклонил ключ или доступ к Gemini API. Проверьте GEMINI_API_KEY и доступ API.")
     if result.source == "unavailable":
         raise ApiError(503, "ai_unavailable", message=result.answer)
     return question, result

@@ -299,7 +299,7 @@ class GeminiClient:
                 return AIResult(cached, True, "cache")
 
         if not settings.gemini_api_key:
-            return AIResult(message("unavailable", lang), True, "unavailable")
+            return AIResult("", True, "not_configured")
 
         payload = build_payload(ctx, history, question)
         async with self._sem:
@@ -320,8 +320,13 @@ class GeminiClient:
                                 self._cache_put(cache_key, result.answer)
                             return result
                     continue  # пустой/битый ответ — пробуем следующую модель
-                if status in (401, 403):
+                err = data.get("error") if isinstance(data.get("error"), dict) else {}
+                err_status = str(err.get("status", "")).upper()
+                err_message = str(err.get("message", "")).lower()
+                invalid_key = (status in (401, 403) or err_status == "API_KEY_INVALID"
+                               or ("api key" in err_message and "valid" in err_message))
+                if invalid_key:
                     log.error("Gemini отклонил ключ или доступ (HTTP %s). Проверьте GEMINI_API_KEY.", status)
-                    break
+                    return AIResult("", True, "key_rejected")
                 # 400, 404, 429, 5xx, таймаут — следующая модель из цепочки
         return AIResult(message("unavailable", lang), True, "unavailable")
