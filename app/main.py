@@ -267,6 +267,11 @@ async def healthz():
     return {"ok": True}
 
 
+@app.get("/api/ai/status", include_in_schema=False)
+async def ai_status():
+    return await gemini.diagnose()
+
+
 @app.get("/api/catalog")
 async def get_catalog():
     return catalog.public_catalog(settings.assistant_name)

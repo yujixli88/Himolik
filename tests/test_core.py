@@ -247,7 +247,7 @@ class ClientTests(unittest.TestCase):
 
     def test_all_models_down_gives_unavailable(self):
         res = self.ask(ai.GeminiClient(FakePost((503, {}), (0, {}))))
-        self.assertEqual(res.source, "fallback")
+        self.assertEqual(res.source, "unavailable")
 
     def test_bad_key_stops_chain_without_leaking(self):
         for response in (
@@ -256,14 +256,14 @@ class ClientTests(unittest.TestCase):
         ):
             post = FakePost(response)
             res = self.ask(ai.GeminiClient(post))
-            self.assertEqual(res.source, "fallback")
+            self.assertEqual(res.source, "unavailable")
             self.assertEqual(len(post.calls), 1)
 
     def test_network_exception_is_handled(self):
         async def boom(*a):
             raise RuntimeError("secret-details")
         res = self.ask(ai.GeminiClient(boom))
-        self.assertEqual(res.source, "fallback")
+        self.assertEqual(res.source, "unavailable")
         self.assertNotIn("secret-details", res.answer)
 
     def test_safety_block(self):
@@ -273,8 +273,7 @@ class ClientTests(unittest.TestCase):
     def test_missing_key(self):
         settings.gemini_api_key = ""
         res = self.ask(ai.GeminiClient(FakePost()))
-        self.assertEqual(res.source, "fallback")
-        self.assertIn("кисл", res.answer.lower())
+        self.assertEqual(res.source, "unavailable")
 
     def test_cache_only_for_first_question(self):
         post = FakePost((200, gemini_reply(True, "Первый")), (200, gemini_reply(True, "Второй")))
