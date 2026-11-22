@@ -41,6 +41,7 @@ async function init() {
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { clearInterval(pollTimer); show('s-' + b.dataset.go); });
   $('b-teacher').onclick = () => { show('s-teacher'); renderItems(); const t = store.get('hm_t'); if (t) loadTeacher(t); };
   $('b-student').onclick = () => show('s-join');
+  $('b-home-chat').onclick = () => toast('Сначала создай комнату или войди в неё — тогда Химолик сможет отвечать по теме опыта.');
   document.querySelectorAll('input[name=subj]').forEach(r => r.onchange = renderItems);
   $('t-create').onclick = createRoom; $('t-close').onclick = closeRoom; $('j-go').onclick = join;
   const q = new URLSearchParams(location.search).get('room');
