@@ -316,6 +316,50 @@ async def close_room(room: rooms.Room = Depends(teacher_room)):
     return {"ok": True}
 
 
+@app.post("/api/teacher/chat")
+async def teacher_chat(body: ChatBody, room: rooms.Room = Depends(teacher_room)):
+    limit(f"chat-teacher:{room.code}", settings.chat_per_room_per_min, 60)
+    ev = simulator.evaluate(room.subject, simulator.empty_state(room.subject))
+    lab = LabContext(
+        subject=room.subject,
+        title=room.title,
+        items_ru=[catalog.ITEMS[i]["ai"] for i in room.items],
+        state_desc=simulator.describe_ru(room.subject, ev),
+        recent_ru=[],
+    )
+    result = await gemini.ask(lab, room.teacher_history, " ".join(body.message.split()), body.lang)
+    if result.source == "busy":
+        raise ApiError(429, "ai_busy", message=result.answer, retry_after=10)
+    if result.source == "unavailable":
+        raise ApiError(503, "ai_unavailable", message=result.answer)
+    if result.on_topic:
+        room.teacher_history = (room.teacher_history + [("user", " ".join(body.message.split())),
+                                                       ("model", result.answer)])[-8:]
+    return {"answer": result.answer, "on_topic": result.on_topic}
+
+
+@app.post("/api/assistant/chat")
+async def public_assistant_chat(body: ChatBody, request: Request):
+    """Общий Химолик с главного экрана без комнаты и авторизации."""
+    limit(f"chat-public-ip:{client_ip(request)}", 30, 60)
+    question = " ".join(body.message.split())
+    if not question:
+        raise ApiError(400, "bad_request")
+    lab = LabContext(
+        subject="general",
+        title="Общий школьный вопрос по химии и физике",
+        items_ru=[],
+        state_desc="Ученик ещё не вошёл в комнату. Не придумывай состояние конкретного опыта.",
+        recent_ru=[],
+    )
+    result = await gemini.ask(lab, [], question, body.lang)
+    if result.source == "busy":
+        raise ApiError(429, "ai_busy", message=result.answer, retry_after=10)
+    if result.source == "unavailable":
+        raise ApiError(503, "ai_unavailable", message=result.answer)
+    return {"answer": result.answer, "on_topic": result.on_topic}
+
+
 # =============================================================================
 # Ученик
 # =============================================================================
