@@ -61,7 +61,6 @@ async function init() {
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { clearInterval(pollTimer); show('s-' + b.dataset.go); });
   $('b-teacher').onclick = () => { show('s-teacher'); renderItems(); const t = store.get('hm_t'); if (t) loadTeacher(t); };
   $('b-student').onclick = () => show('s-join');
-  $('b-home-chat').onclick = () => { $('chat').hidden = false; $('chat-q').focus(); };
   document.querySelectorAll('input[name=subj]').forEach(r => r.onchange = renderItems);
   $('t-create').onclick = createRoom; $('t-close').onclick = closeRoom; $('j-go').onclick = join;
   const q = new URLSearchParams(location.search).get('room');
@@ -194,10 +193,9 @@ async function sendChat() {
   const q = $('chat-q').value.trim(); if (!q) return; $('chat-q').value = '';
   const log = $('chat-log'); log.append(el('div', 'msg me', q));
   const wait = el('div', 'msg ai', '…'); log.append(wait); log.scrollTop = log.scrollHeight;
-  const home = !$('s-home').hidden;
   const teacher = !$('s-teacher').hidden;
-  const path = home ? '/api/assistant/chat' : teacher ? '/api/teacher/chat' : '/api/chat';
-  const auth = home ? null : teacher ? store.get('hm_t') : token;
+  const path = teacher ? '/api/teacher/chat' : '/api/chat';
+  const auth = teacher ? store.get('hm_t') : token;
   const d = await chatApi(path, { message: q, lang: 'ru' }, auth);
   wait.textContent = d.__error || d.answer || 'Не получилось ответить. Попробуй ещё раз.';
   log.scrollTop = log.scrollHeight;

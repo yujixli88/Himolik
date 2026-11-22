@@ -235,6 +235,16 @@ class ClientTests(unittest.TestCase):
         post = FakePost((404, {}), (200, gemini_reply(True, "ок")))
         self.assertEqual(self.ask(ai.GeminiClient(post)).answer, "ок")
 
+    def test_retries_short_gemini_503_before_fallback_model(self):
+        post = FakePost(
+            (503, {}),
+            (503, {}),
+            (200, gemini_reply(True, "Ответ после короткого сбоя")),
+        )
+        res = self.ask(ai.GeminiClient(post))
+        self.assertEqual(res.answer, "Ответ после короткого сбоя")
+        self.assertEqual(len(post.calls), 3)
+
     def test_all_models_down_gives_unavailable(self):
         res = self.ask(ai.GeminiClient(FakePost((503, {}), (0, {}))))
         self.assertEqual(res.source, "fallback")

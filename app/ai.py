@@ -310,16 +310,21 @@ class GeminiClient:
     async def _call(self, model: str, payload: dict) -> tuple[int, dict]:
         url = f"{API_ROOT}/{model}:generateContent"
         headers = {"x-goog-api-key": settings.gemini_api_key, "Content-Type": "application/json"}
-        try:
-            status, data = await self._post(url, headers, payload, settings.gemini_timeout)
-        except Exception as exc:  # сеть, таймаут и т. п.
-            log.warning("Gemini %s: сбой соединения (%s)", model, type(exc).__name__)
-            return 0, {}
-        data = data if isinstance(data, dict) else {}
-        if status != 200:
+        for attempt in range(3):
+            try:
+                status, data = await self._post(url, headers, payload, settings.gemini_timeout)
+            except Exception as exc:  # сеть, таймаут и т. п.
+                log.warning("Gemini %s: сбой соединения (%s), попытка %s", model, type(exc).__name__, attempt + 1)
+                status, data = 0, {}
+            data = data if isinstance(data, dict) else {}
+            if status == 200:
+                break
             err = data.get("error") if isinstance(data.get("error"), dict) else {}
-            log.warning("Gemini %s: HTTP %s %s %s", model, status, err.get("status", ""),
-                        str(err.get("message", ""))[:160])
+            log.warning("Gemini %s: HTTP %s %s %s, попытка %s", model, status, err.get("status", ""),
+                        str(err.get("message", ""))[:160], attempt + 1)
+            if status not in (0, 500, 502, 503, 504) or attempt == 2:
+                break
+            await asyncio.sleep(0.5 * (attempt + 1))
         return status, data
 
     # --- главный метод ---------------------------------------------------

@@ -354,28 +354,6 @@ async def teacher_chat(body: ChatBody, room: rooms.Room = Depends(teacher_room))
     return {"answer": result.answer, "on_topic": result.on_topic}
 
 
-@app.post("/api/assistant/chat")
-async def public_assistant_chat(body: ChatBody, request: Request):
-    """Общий Химолик с главного экрана. Комната и личный контекст не нужны."""
-    limit(f"chat-public-ip:{client_ip(request)}", 30, 60)
-    question = " ".join(body.message.split())
-    if not question:
-        raise ApiError(400, "bad_request")
-    lab = LabContext(
-        subject="general",
-        title="Общий школьный вопрос по химии и физике",
-        items_ru=[],
-        state_desc="Ученик ещё не вошёл в комнату. Не придумывай состояние конкретного опыта.",
-        recent_ru=[],
-    )
-    result = await gemini.ask(lab, [], question, body.lang)
-    if result.source == "busy":
-        raise ApiError(429, "ai_busy", message=result.answer, retry_after=10)
-    if result.source == "unavailable":
-        raise ApiError(503, "ai_unavailable", message=result.answer)
-    return {"answer": result.answer, "on_topic": result.on_topic}
-
-
 # =============================================================================
 # Ученик
 # =============================================================================
