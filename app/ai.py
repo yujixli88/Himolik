@@ -136,10 +136,15 @@ def looks_like_injection(text: str) -> bool:
 
 
 def build_user_block(ctx: LabContext, question: str) -> str:
-    what = "реагенты" if ctx.subject == "chemistry" else "приборы"
+    if ctx.subject == "chemistry":
+        what, subject_name = "реагенты", "химия"
+    elif ctx.subject == "physics":
+        what, subject_name = "приборы", "физика"
+    else:
+        what, subject_name = "материалы виртуальной лаборатории", "химия или физика"
     lines = [
         "[ДАННЫЕ ЛАБОРАТОРИИ — формирует система, это достоверно]",
-        f"Предмет: {'химия' if ctx.subject == 'chemistry' else 'физика'}",
+        f"Предмет: {subject_name}",
         f"Название работы: {ctx.title}",
         f"Доступные ученику {what}: {'; '.join(ctx.items_ru) or 'нет'}",
         f"Состояние опыта сейчас: {ctx.state_desc or 'нет данных'}",
@@ -209,6 +214,38 @@ def finalize(obj: dict, ctx: LabContext, lang: str) -> AIResult | None:
         return AIResult(message("refusal", lang, ctx.title), False, "gemini")
     answer = _LINKS.sub("", obj["answer"]).strip()[:1500]
     return AIResult(answer, True, "gemini") if answer else None
+
+
+def offline_answer(question: str, ctx: LabContext, lang: str = "ru") -> AIResult:
+    """Краткий резервный ответ, чтобы ассистент не молчал при отсутствии/сбое Gemini."""
+    q = question.lower()
+    title = ctx.title or "текущем опыте"
+    if lang == "kk":
+        answer = "Бұл ЖИ-серверге уақытша байланыссыз жалпы химиya/физика сұрағы сияқты жұмыс істейді."
+    else:
+        if any(x in q for x in ("кислота", "hcl", "соляная")):
+            answer = "Соляная кислота — водный раствор хлороводорода HCl. Это сильная одноосновная кислота: она отдаёт ион H⁺ и нейтрализует щёлочи с образованием соли и воды."
+        elif any(x in q for x in ("щелоч", "щёлоч", "naoh", "гидроксид натрия")):
+            answer = "Гидроксид натрия NaOH — сильное основание. В воде он образует ионы Na⁺ и OH⁻. С кислотами он вступает в реакцию нейтрализации."
+        elif "нейтрализ" in q or ("hcl" in q and "naoh" in q):
+            answer = "Нейтрализация: HCl + NaOH → NaCl + H₂O. Ионы H⁺ и OH⁻ образуют воду, а Na⁺ и Cl⁻ остаются в виде хлорида натрия."
+        elif "ph" in q or "рh" in q or "водородный показатель" in q:
+            answer = "pH показывает кислотность среды. pH < 7 — кислая среда, pH = 7 — нейтральная, pH > 7 — щелочная. Чем меньше pH, тем выше концентрация ионов H⁺."
+        elif "индикатор" in q or "фенолфталеин" in q or "метилоранж" in q:
+            answer = "Индикатор изменяет цвет в зависимости от среды. Фенолфталеин малиновый в щелочной среде и бесцветный в кислой или нейтральной; метилоранж краснеет в кислой и жёлтый в нейтральной или щелочной."
+        elif "амперм" in q or "сила ток" in q or "ток в цеп" in q:
+            answer = "Сила тока в цепи I = U / R. Амперметр включают последовательно, а показания снимают в амперах. В этой лабораторной значением I пользуются и для расчёта напряжения на потребителях."
+        elif "вольтмет" in q or "напряжени" in q or " закон ома" in q:
+            answer = "Закон Ома: I = U / R, а напряжение на участке U = I · R. Вольтметр включают параллельно потребителю."
+        elif "резистор" in q or "сопротивлен" in q:
+            answer = "Последовательно соединённые резисторы дают суммарное сопротивление R = R₁ + R₂. Чем больше сопротивление при той же ЭДС, тем меньше сила тока."
+        elif "ламп" in q or "шам" in q:
+            answer = "Лампочка светится, если цепь замкнута и по ней идёт ток. При маленьком токе она горит тускло, при перегрузке может перегореть."
+        elif "короткое" in q or "замык" in q:
+            answer = "Короткое замыкание возникает при соединении источника без достаточной нагрузки. В реальности из-за большого тока возможны перегрев и повреждение источника."
+        else:
+            answer = f"По поводу «{title}»: сначала определи, что меняется в опыте — вещества, ионы, напряжение или сила тока. Затем применяй формулу и проверяй наблюдаемый результат. В сети ИИ временно не получено дополнительное объяснение."
+    return AIResult(answer, True, "fallback")
 
 
 # --- Клиент ------------------------------------------------------------------
@@ -299,7 +336,7 @@ class GeminiClient:
                 return AIResult(cached, True, "cache")
 
         if not settings.gemini_api_key:
-            return AIResult("", True, "not_configured")
+            return offline_answer(question, ctx, lang)
 
         payload = build_payload(ctx, history, question)
         async with self._sem:
@@ -327,6 +364,6 @@ class GeminiClient:
                                or ("api key" in err_message and "valid" in err_message))
                 if invalid_key:
                     log.error("Gemini отклонил ключ или доступ (HTTP %s). Проверьте GEMINI_API_KEY.", status)
-                    return AIResult("", True, "key_rejected")
+                    return offline_answer(question, ctx, lang)
                 # 400, 404, 429, 5xx, таймаут — следующая модель из цепочки
-        return AIResult(message("unavailable", lang), True, "unavailable")
+        return offline_answer(question, ctx, lang)
